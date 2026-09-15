@@ -1,0 +1,1 @@
+container_image = "public.ecr.aws/docker/library/httpd:2.4"
