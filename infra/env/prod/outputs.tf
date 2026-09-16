@@ -4,8 +4,8 @@ output "alb_dns_name" {
 }
 
 output "application_url" {
-  description = "Public HTTP URL of the application."
-  value       = module.web_stack.alb_http_url
+  description = "Public HTTPS URL of the application."
+  value       = module.web_stack.application_url
 }
 
 output "ecs_cluster_name" {

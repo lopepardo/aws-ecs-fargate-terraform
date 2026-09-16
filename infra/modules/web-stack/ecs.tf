@@ -42,8 +42,16 @@ resource "aws_ecs_task_definition" "app" {
 
     environment = [
       {
+        name  = "PORT"
+        value = tostring(var.application_port)
+      },
+      {
         name  = "APP_ENV"
         value = var.environment
+      },
+      {
+        name  = "APP_VERSION"
+        value = var.app_version
       }
     ]
 
@@ -52,7 +60,7 @@ resource "aws_ecs_task_definition" "app" {
 
       options = {
         awslogs-group         = aws_cloudwatch_log_group.app.name
-        awslogs-region        = var.aws_region
+        awslogs-region        = local.aws_region
         awslogs-stream-prefix = "ecs"
       }
     }
@@ -115,6 +123,7 @@ resource "aws_ecs_service" "app" {
 
   depends_on = [
     aws_lb_listener.http,
+    aws_lb_listener.https,
     aws_iam_role_policy_attachment.execution
   ]
 }

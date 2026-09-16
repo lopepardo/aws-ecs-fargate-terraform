@@ -1,0 +1,2 @@
+container_image = "262739270349.dkr.ecr.us-east-1.amazonaws.com/ecs-alb-api:1.0.0"
+app_version = "replace-with-git-commit-sha"

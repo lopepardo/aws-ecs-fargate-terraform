@@ -3,9 +3,9 @@ output "alb_dns_name" {
   value       = aws_lb.app.dns_name
 }
 
-output "alb_http_url" {
-  description = "HTTP URL of the Application Load Balancer."
-  value       = "http://${aws_lb.app.dns_name}"
+output "application_url" {
+  description = "HTTP/S URL of the Application Load Balancer."
+  value       = local.https_enabled ? "https://${var.https.domain_name}" : "http://${aws_lb.app.dns_name}"
 }
 
 output "ecs_cluster_name" {

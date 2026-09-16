@@ -38,9 +38,8 @@ module "web_stack" {
   source = "../../modules/web-stack"
 
   name_prefix = local.name_prefix
-  aws_region  = local.aws_region
   environment = local.environment
-  tags        = local.tags
+  app_version = var.app_version
 
   vpc_id             = module.network.vpc_id
   public_subnet_ids  = module.network.public_subnets
@@ -49,7 +48,12 @@ module "web_stack" {
   container_image  = var.container_image
   task_cpu         = 256
   task_memory      = 512
-  application_port = 80
+  application_port = 3000
   min_tasks        = 4
   max_tasks        = 8
+  https = {
+    certificate_arn = var.certificate_arn
+    domain_name     = var.domain_name
+    route53_zone_id = var.route53_zone_id
+  }
 }

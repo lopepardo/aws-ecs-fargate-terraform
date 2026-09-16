@@ -4,11 +4,6 @@ variable "name_prefix" {
   type        = string
 }
 
-variable "aws_region" {
-  description = "AWS Region where resources are deployed."
-  type        = string
-}
-
 variable "environment" {
   description = "Deployment environment name (dev, staging, or prod)."
   type        = string
@@ -19,9 +14,9 @@ variable "environment" {
   }
 }
 
-variable "tags" {
-  description = "Tags to apply to all resources."
-  type        = map(string)
+variable "app_version" {
+  description = "ID of the deployed app version"
+  type        = string
 }
 
 # Network configuration
@@ -54,13 +49,6 @@ variable "task_memory" {
 variable "container_image" {
   description = "Container image URI used by the ECS task."
   type        = string
-
-  # validation {
-  #   condition = can(
-  #     regex("@sha256:[0-9a-fA-F]{64}$", var.container_image)
-  #   )
-  #   error_message = "container_image must end with a SHA-256 digest."
-  # }
 }
 
 variable "application_port" {
@@ -80,8 +68,8 @@ variable "min_tasks" {
   nullable    = false
 
   validation {
-    condition     = var.min_tasks >= 0 && var.min_tasks == floor(var.min_tasks)
-    error_message = "Minimum ECS task count must be a non-negative integer."
+    condition     = var.min_tasks >= 1 && var.min_tasks == floor(var.min_tasks)
+    error_message = "The minimum number of ECS tasks must be at least one."
   }
 }
 
@@ -98,5 +86,28 @@ variable "max_tasks" {
   validation {
     condition     = var.min_tasks <= var.max_tasks
     error_message = "Minimum ECS task count must be less than or equal to maximum ECS task count."
+  }
+}
+
+variable "https" {
+  description = "HTTPS and public DNS configuration. Null means HTTP-only."
+  type = object({
+    certificate_arn = string
+    domain_name     = string
+    route53_zone_id = string
+    ssl_policy = optional(
+      string,
+      "ELBSecurityPolicy-TLS13-1-2-Res-PQ-2025-09"
+    )
+  })
+  default = null
+
+  validation {
+    condition = var.https == null ? true : alltrue([
+      length(trimspace(var.https.certificate_arn)) > 0,
+      length(trimspace(var.https.domain_name)) > 0,
+      length(trimspace(var.https.route53_zone_id)) > 0,
+    ])
+    error_message = "When https is configured, certificate_arn, domain_name, and route53_zone_id must not be empty."
   }
 }
