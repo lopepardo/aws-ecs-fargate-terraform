@@ -21,11 +21,11 @@ WORKDIR /app
 
 ENV NODE_ENV=production
 
-RUN corepack enable
+COPY --from=base --chown=node:node /app/package.json ./package.json
+COPY --from=base --chown=node:node /app/node_modules ./node_modules
+COPY --from=base --chown=node:node /app/dist ./dist
 
-COPY --from=base /app/package.json ./package.json
-COPY --from=base /app/node_modules ./node_modules
-COPY --from=base /app/dist ./dist
+USER node
 
 EXPOSE 3000
 
