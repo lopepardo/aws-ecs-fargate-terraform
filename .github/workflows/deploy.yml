@@ -53,6 +53,7 @@ jobs:
           platforms: linux/amd64
           pull: true
           push: true
+          provenance: mode=min
           tags: ${{ steps.ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:${{ github.sha }}
           labels: |
             org.opencontainers.image.revision=${{ github.sha }}
