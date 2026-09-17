@@ -1,0 +1,81 @@
+name: Publish dev image to ECR
+on:
+  push:
+    branches: ["main"]
+    paths:
+      - "app/**"
+      - ".github/workflows/deploy.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write
+env:
+  AWS_REGION: us-east-1
+  ECR_REPOSITORY: ecs-alb-api
+
+jobs:
+  publish:
+    name: Build and publish dev image
+    runs-on: ubuntu-latest
+
+    outputs:
+      image_id: ${{ steps.build.outputs.imageid }}
+      image_digest: ${{ steps.build.outputs.digest }}
+      image_uri: ${{ steps.result.outputs.image_uri }}
+      app_version: ${{ steps.result.outputs.app_version }}
+
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v7
+
+      - name: Configure temporary AWS credentials
+        uses: aws-actions/configure-aws-credentials@v6.3.0
+        with:
+          allowed-account-ids: ${{ secrets.AWS_ACCOUNT_ID }}
+          aws-region: ${{ env.AWS_REGION }}
+          role-to-assume: ${{ secrets.AWS_DEV_ROLE_ARN }}
+          role-session-name: github-${{ github.run_id }}
+
+      - name: Login to Amazon ECR
+        id: ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4
+
+      - name: Build and push image
+        id: build
+        uses: docker/build-push-action@v7
+        with:
+          context: ./app
+          file: ./app/Dockerfile
+          platforms: linux/amd64
+          pull: true
+          push: true
+          tags: ${{ steps.ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:${{ github.sha }}
+          labels: |
+            org.opencontainers.image.revision=${{ github.sha }}
+            org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
+
+      - name: Expose publication result
+        id: result
+        env:
+          IMAGE_REPOSITORY: ${{ steps.ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}
+          IMAGE_ID: ${{ steps.build.outputs.imageid }}
+          IMAGE_DIGEST: ${{ steps.build.outputs.digest }}
+          APP_VERSION: ${{ github.sha }}
+        run: |
+          IMAGE_URI="${IMAGE_REPOSITORY}@${IMAGE_DIGEST}"
+
+          echo "image_uri=${IMAGE_URI}" >> "$GITHUB_OUTPUT"
+          echo "app_version=${APP_VERSION}" >> "$GITHUB_OUTPUT"
+
+          {
+            echo "## Dev image published"
+            echo
+            printf -- '- Image ID: `%s`\n' "$IMAGE_ID"
+            printf -- '- Digest: `%s`\n' "$IMAGE_DIGEST"
+            printf -- '- Immutable URI: `%s`\n' "$IMAGE_URI"
+            printf -- '- App version: `%s`\n' "$APP_VERSION"
+          } >> "$GITHUB_STEP_SUMMARY"
